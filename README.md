@@ -1,6 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pig Farm Management System (ระบบจัดการฟาร์มสุกร)
 
-## Getting Started
+ระบบจัดการฟาร์มสุกรครบวงจร พัฒนาด้วย Next.js, TypeScript, Tailwind CSS และ PostgreSQL
+
+## Features (ฟีเจอร์)
+
+### 1. การจัดการแม่พันธุ์ (Sow Management)
+- ✅ บันทึกประวัติแม่สุกร (หมายเลขประจำตัว, สายพันธุ์, วันเกิด)
+- ✅ บันทึกข้อมูลการผสมพันธุ์ (วันที่ผสม, พ่อพันธุ์, วิธีการผสม)
+- ✅ บันทึกข้อมูลการคลอด (วันคลอด, จำนวนลูกสุกร, น้ำหนักแรกคลอด)
+
+### 2. การจัดการลูกสุกร/สุกรขุน (Piglet Management)
+- ✅ การบันทึกการหย่านม (วันที่หย่านม, น้ำหนัก)
+- ✅ การบันทึกการย้ายคอก/จัดกลุ่ม
+- ✅ การบันทึกอัตราการเจริญเติบโต (น้ำหนัก ณ ช่วงเวลาต่าง ๆ)
+
+### 3. สุขภาพและการรักษา (Health Management)
+- ✅ การบันทึกการให้วัคซีนและยา
+- ✅ การบันทึกการป่วยและการรักษา
+- ✅ การบันทึกการสูญเสีย (สาเหตุการตาย)
+
+### 4. การวิเคราะห์และการรายงาน (Analytics & Reports)
+- ✅ FCR (Feed Conversion Ratio) – อัตราการแลกเนื้อ
+- ✅ อัตราการตาย (Mortality Rate)
+- ✅ อัตราการผสมติด (Breeding Success Rate)
+- ✅ Dashboard สรุปข้อมูลสำคัญ
+
+## Tech Stack
+
+- **Frontend:** Next.js 15, React 19, TypeScript
+- **Styling:** Tailwind CSS
+- **Backend:** Next.js API Routes
+- **Database:** PostgreSQL
+- **ORM:** Prisma
+- **Form Handling:** React Hook Form, Zod
+- **Charts:** Recharts
+
+## Installation (การติดตั้ง)
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Setup database
+
+Update the `.env` file with your PostgreSQL connection string:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+```
+
+Example:
+```env
+DATABASE_URL="postgresql://postgres:password@localhost:5432/farmpigs?schema=public"
+```
+
+### 3. Run Prisma migrations
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 4. Generate Prisma client
+
+```bash
+npx prisma generate
+```
+
+### 5. Run the development server
 
 First, run the development server:
 

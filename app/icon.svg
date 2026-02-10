@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="#FF69B4"/>
+  
+  <!-- Pig Face -->
+  <ellipse cx="50" cy="55" rx="35" ry="30" fill="#FFB6C1"/>
+  
+  <!-- Left Ear -->
+  <ellipse cx="22" cy="28" rx="12" ry="15" fill="#FFB6C1"/>
+  <ellipse cx="22" cy="28" rx="7" ry="10" fill="#FF69B4"/>
+  
+  <!-- Right Ear -->
+  <ellipse cx="78" cy="28" rx="12" ry="15" fill="#FFB6C1"/>
+  <ellipse cx="78" cy="28" rx="7" ry="10" fill="#FF69B4"/>
+  
+  <!-- Snout -->
+  <ellipse cx="50" cy="62" rx="18" ry="13" fill="#FF91A4"/>
+  
+  <!-- Nostrils -->
+  <ellipse cx="43" cy="62" rx="4" ry="5" fill="#D16587"/>
+  <ellipse cx="57" cy="62" rx="4" ry="5" fill="#D16587"/>
+  
+  <!-- Left Eye -->
+  <ellipse cx="35" cy="45" rx="6" ry="7" fill="#333"/>
+  <ellipse cx="36" cy="43" rx="2" ry="2.5" fill="#fff"/>
+  
+  <!-- Right Eye -->
+  <ellipse cx="65" cy="45" rx="6" ry="7" fill="#333"/>
+  <ellipse cx="66" cy="43" rx="2" ry="2.5" fill="#fff"/>
+  
+  <!-- Cheeks -->
+  <ellipse cx="25" cy="55" rx="8" ry="6" fill="#FF91A4" opacity="0.6"/>
+  <ellipse cx="75" cy="55" rx="8" ry="6" fill="#FF91A4" opacity="0.6"/>
+</svg>

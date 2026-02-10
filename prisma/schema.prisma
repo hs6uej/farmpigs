@@ -1,0 +1,428 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication Models
+model User {
+  id                  String    @id @default(cuid())
+  name                String?
+  email               String    @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?   // For email/password auth
+  role                UserRole  @default(USER)
+  failedLoginAttempts Int       @default(0)  // จำนวนครั้งที่ login ผิดพลาด
+  lockedAt            DateTime? // เวลาที่ถูก lock
+  lockedUntil         DateTime? // lock ถึงเวลาไหน (null = lock ถาวร ต้องให้ admin unlock)
+  lockedReason        String?   // เหตุผลที่ถูก lock
+  accounts            Account[]
+  sessions            Session[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+// แม่พันธุ์ (Sow)
+model Sow {
+  id            String         @id @default(cuid())
+  tagNumber     String         @unique // หมายเลขประจำตัว
+  breed         String         // สายพันธุ์
+  birthDate     DateTime       // วันเกิด
+  status        SowStatus      @default(ACTIVE) // สถานะ
+  purchaseDate  DateTime?      // วันที่ซื้อ
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  breedings     Breeding[]
+  farrowings    Farrowing[]
+  healthRecords HealthRecord[]
+  
+  @@index([tagNumber])
+  @@index([status])
+}
+
+enum SowStatus {
+  ACTIVE      // ใช้งานอยู่
+  PREGNANT    // ท้อง
+  LACTATING   // ให้นม
+  WEANED      // หย่านมแล้ว
+  CULLED      // คัดออก
+  SOLD        // ขาย
+  DEAD        // ตาย
+}
+
+// พ่อพันธุ์ (Boar)
+model Boar {
+  id            String         @id @default(cuid())
+  tagNumber     String         @unique // หมายเลขประจำตัว
+  breed         String         // สายพันธุ์
+  birthDate     DateTime       // วันเกิด
+  status        BoarStatus     @default(ACTIVE)
+  purchaseDate  DateTime?
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  breedings     Breeding[]
+  healthRecords HealthRecord[]
+  
+  @@index([tagNumber])
+  @@index([status])
+}
+
+enum BoarStatus {
+  ACTIVE      // ใช้งานอยู่
+  RETIRED     // เกษียณ
+  SOLD        // ขาย
+  DEAD        // ตาย
+}
+
+// การผสมพันธุ์ (Breeding)
+model Breeding {
+  id              String          @id @default(cuid())
+  sowId           String
+  boarId          String
+  breedingDate    DateTime        // วันที่ผสม
+  breedingMethod  BreedingMethod  // วิธีการผสม
+  expectedFarrowDate DateTime?    // วันคาดว่าจะคลอด (114 วันหลังผสม)
+  success         Boolean?        // ผสมติดหรือไม่
+  notes           String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  sow             Sow             @relation(fields: [sowId], references: [id], onDelete: Cascade)
+  boar            Boar            @relation(fields: [boarId], references: [id], onDelete: Cascade)
+  farrowing       Farrowing?
+  
+  @@index([sowId])
+  @@index([boarId])
+  @@index([breedingDate])
+}
+
+enum BreedingMethod {
+  NATURAL     // ผสมธรรมชาติ
+  AI          // ผสมเทียม (Artificial Insemination)
+}
+
+// การคลอด (Farrowing)
+model Farrowing {
+  id                  String    @id @default(cuid())
+  sowId               String
+  breedingId          String    @unique
+  farrowingDate       DateTime  // วันที่คลอด
+  totalBorn           Int       // จำนวนลูกทั้งหมด
+  bornAlive           Int       // จำนวนลูกที่มีชีวิต
+  stillborn           Int       @default(0) // ตายคลอด
+  mummified           Int       @default(0) // แห้ง
+  averageBirthWeight  Float?    // น้ำหนักเฉลี่ยแรกคลอด (kg)
+  notes               String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  sow                 Sow       @relation(fields: [sowId], references: [id], onDelete: Cascade)
+  breeding            Breeding  @relation(fields: [breedingId], references: [id], onDelete: Cascade)
+  piglets             Piglet[]
+  
+  @@index([sowId])
+  @@index([farrowingDate])
+}
+
+// ลูกสุกร (Piglet)
+model Piglet {
+  id              String           @id @default(cuid())
+  tagNumber       String?          @unique // หมายเลขประจำตัว
+  farrowingId     String
+  birthWeight     Float?           // น้ำหนักแรกคลอด (kg)
+  currentPenId    String?          // คอกปัจจุบัน
+  status          PigletStatus     @default(NURSING)
+  gender          Gender?
+  notes           String?          @db.Text
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  farrowing       Farrowing        @relation(fields: [farrowingId], references: [id], onDelete: Cascade)
+  currentPen      Pen?             @relation(fields: [currentPenId], references: [id])
+  weaning         Weaning?
+  growthRecords   GrowthRecord[]
+  penTransfers    PenTransfer[]
+  healthRecords   HealthRecord[]
+  
+  @@index([farrowingId])
+  @@index([currentPenId])
+  @@index([status])
+}
+
+enum PigletStatus {
+  NURSING     // กำลังกินนม
+  WEANED      // หย่านมแล้ว
+  GROWING     // กำลังเจริญเติบโต
+  READY       // พร้อมขาย
+  SOLD        // ขายแล้ว
+  DEAD        // ตาย
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+// คอก (Pen)
+model Pen {
+  id            String        @id @default(cuid())
+  penNumber     String        @unique // หมายเลขคอก
+  penType       PenType       // ประเภทคอก
+  capacity      Int           // ความจุ
+  currentCount  Int           @default(0) // จำนวนสุกรปัจจุบัน
+  notes         String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  piglets       Piglet[]
+  transfers     PenTransfer[]
+  
+  @@index([penNumber])
+  @@index([penType])
+}
+
+enum PenType {
+  FARROWING   // คอกคลอด
+  NURSERY     // คอกหย่านม
+  GROWING     // คอกขุน
+  FINISHING   // คอกขุนขาย
+}
+
+// การหย่านม (Weaning)
+model Weaning {
+  id            String    @id @default(cuid())
+  pigletId      String    @unique
+  weaningDate   DateTime  // วันที่หย่านม
+  weaningWeight Float     // น้ำหนักหย่านม (kg)
+  ageAtWeaning  Int       // อายุเมื่อหย่านม (วัน)
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  piglet        Piglet    @relation(fields: [pigletId], references: [id], onDelete: Cascade)
+  
+  @@index([weaningDate])
+}
+
+// การย้ายคอก (Pen Transfer)
+model PenTransfer {
+  id          String    @id @default(cuid())
+  pigletId    String
+  fromPenId   String?   // คอกเดิม (null ถ้าเพิ่งเกิด)
+  toPenId     String    // คอกใหม่
+  transferDate DateTime // วันที่ย้าย
+  reason      String?   // เหตุผลการย้าย
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  
+  piglet      Piglet    @relation(fields: [pigletId], references: [id], onDelete: Cascade)
+  toPen       Pen       @relation(fields: [toPenId], references: [id])
+  
+  @@index([pigletId])
+  @@index([transferDate])
+}
+
+// บันทึกการเจริญเติบโต (Growth Record)
+model GrowthRecord {
+  id            String    @id @default(cuid())
+  pigletId      String
+  recordDate    DateTime  // วันที่บันทึก
+  weight        Float     // น้ำหนัก (kg)
+  ageInDays     Int       // อายุ (วัน)
+  adg           Float?    // Average Daily Gain (kg/day)
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  piglet        Piglet    @relation(fields: [pigletId], references: [id], onDelete: Cascade)
+  
+  @@index([pigletId])
+  @@index([recordDate])
+}
+
+// บันทึกสุขภาพ (Health Record)
+model HealthRecord {
+  id            String        @id @default(cuid())
+  recordType    HealthRecordType
+  recordDate    DateTime      // วันที่บันทึก
+  
+  // Relations (one of these will be filled)
+  sowId         String?
+  boarId        String?
+  pigletId      String?
+  
+  // For Vaccination & Treatment
+  vaccineName   String?       // ชื่อวัคซีน
+  medicineName  String?       // ชื่อยา
+  dosage        String?       // ขนาดยา
+  administeredBy String?      // ผู้ให้
+  
+  // For Disease & Mortality
+  disease       String?       // โรค
+  symptoms      String?       @db.Text // อาการ
+  treatment     String?       @db.Text // การรักษา
+  outcome       String?       // ผลลัพธ์
+  deathCause    String?       // สาเหตุการตาย
+  
+  cost          Float?        // ค่าใช้จ่าย
+  notes         String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  sow           Sow?          @relation(fields: [sowId], references: [id], onDelete: Cascade)
+  boar          Boar?         @relation(fields: [boarId], references: [id], onDelete: Cascade)
+  piglet        Piglet?       @relation(fields: [pigletId], references: [id], onDelete: Cascade)
+  
+  @@index([recordType])
+  @@index([recordDate])
+  @@index([sowId])
+  @@index([boarId])
+  @@index([pigletId])
+}
+
+enum HealthRecordType {
+  VACCINATION   // วัคซีน
+  TREATMENT     // การรักษา
+  DISEASE       // การป่วย
+  MORTALITY     // การตาย
+}
+
+// Feed Consumption (for FCR calculation)
+model FeedConsumption {
+  id            String    @id @default(cuid())
+  recordDate    DateTime  // วันที่บันทึก
+  penId         String?   // คอก (optional)
+  feedType      String    // ประเภทอาหาร
+  quantity      Float     // ปริมาณ (kg)
+  cost          Float?    // ค่าใช้จ่าย
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([recordDate])
+  @@index([penId])
+}
+
+// Activity Log - บันทึกกิจกรรมการใช้งานระบบ (เก็บ 120 วัน)
+model ActivityLog {
+  id          String       @id @default(cuid())
+  userId      String       // ID ของผู้ใช้
+  userEmail   String       // อีเมลของผู้ใช้ (เก็บไว้เผื่อ user ถูกลบ)
+  userName    String?      // ชื่อผู้ใช้
+  action      ActionType   // ประเภทการกระทำ
+  module      String       // โมดูลที่ทำงาน (sows, boars, piglets, etc.)
+  entityId    String?      // ID ของ entity ที่เกี่ยวข้อง
+  entityName  String?      // ชื่อ/หมายเลขของ entity (เช่น tag number)
+  details     String?      @db.Text // รายละเอียดเพิ่มเติม (JSON)
+  ipAddress   String?      // IP Address
+  userAgent   String?      @db.Text // Browser/Device info
+  createdAt   DateTime     @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([createdAt])
+}
+
+enum ActionType {
+  CREATE        // สร้างข้อมูลใหม่
+  UPDATE        // แก้ไขข้อมูล
+  DELETE        // ลบข้อมูล
+  VIEW          // ดูข้อมูล
+  EXPORT        // ส่งออกข้อมูล
+  LOGIN         // เข้าสู่ระบบ
+  LOGOUT        // ออกจากระบบ
+  LOGIN_FAILED  // เข้าสู่ระบบล้มเหลว
+  LOGIN_BLOCKED // การเข้าสู่ระบบถูกบล็อค (บัญชีถูกล็อค)
+  ACCOUNT_LOCKED // บัญชีถูกล็อค
+  USER_UNLOCKED // ปลดล็อคบัญชี
+}
+
+// Notification - การแจ้งเตือน
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String?           // null = broadcast to all users
+  title       String            // หัวข้อการแจ้งเตือน
+  message     String            @db.Text // ข้อความแจ้งเตือน
+  type        NotificationType  @default(INFO)
+  category    String?           // หมวดหมู่ (system, task, breeding, etc.)
+  link        String?           // ลิงก์ที่เกี่ยวข้อง
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+  createdAt   DateTime          @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  INFO        // ข้อมูลทั่วไป
+  SUCCESS     // สำเร็จ
+  WARNING     // เตือน
+  ERROR       // ข้อผิดพลาด
+  TASK        // งานที่ต้องทำ
+}
+
+// System Configuration - การตั้งค่าระบบ
+model SystemConfig {
+  id                       String   @id @default("system_config")
+  activityLogRetentionDays Int      @default(90)     // จำนวนวันที่เก็บ activity log
+  maxLoginAttempts         Int      @default(5)      // จำนวนครั้งสูงสุดที่อนุญาตให้ login ผิดพลาด
+  sessionTimeoutMinutes    Int      @default(30)     // timeout session (นาที)
+  autoBackupEnabled        Boolean  @default(true)   // เปิด/ปิด auto backup
+  backupFrequencyDays      Int      @default(7)      // ความถี่ในการ backup (วัน)
+  maintenanceMode          Boolean  @default(false)  // โหมดบำรุงรักษา
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}

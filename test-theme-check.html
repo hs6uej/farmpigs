@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head><title>Theme Test</title></head>
+<body>
+<h1>Theme Storage Check</h1>
+<div id="info"></div>
+<button onclick="setDark()">Set Dark</button>
+<button onclick="setLight()">Set Light</button>
+<button onclick="check()">Check</button>
+<button onclick="clear()">Clear All</button>
+
+<script>
+function check() {
+  const theme = localStorage.getItem('farm-theme');
+  const theme2 = localStorage.getItem('theme');
+  document.getElementById('info').innerHTML = 
+    'farm-theme: ' + theme + '<br>' +
+    'theme: ' + theme2 + '<br>' +
+    'All keys: ' + Object.keys(localStorage).join(', ');
+}
+function setDark() {
+  localStorage.setItem('farm-theme', 'dark');
+  check();
+}
+function setLight() {
+  localStorage.setItem('farm-theme', 'light');
+  check();
+}
+function clear() {
+  localStorage.clear();
+  check();
+}
+check();
+</script>
+</body>
+</html>
