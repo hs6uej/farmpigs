@@ -10,31 +10,31 @@ const DEFAULT_MAX_LOGIN_ATTEMPTS = 5;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { username, password } = body;
 
-    if (!email || !password) {
-      return NextResponse.json({ 
+    if (!username || !password) {
+      return NextResponse.json({
         error: 'INVALID_CREDENTIALS',
-        message: 'Email and password are required' 
+        message: 'Username and password are required'
       }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { username }
     });
 
     if (!user || !user.password) {
       await logActivity({
         userId: 'unknown',
-        userEmail: email,
-        userName: null,
+        userEmail: '', // No email available if using username login that failed
+        userName: username,
         action: 'LOGIN_FAILED',
         module: 'AUTH',
         details: { reason: 'User not found or no password' },
       });
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'INVALID_CREDENTIALS',
-        message: 'Invalid email or password' 
+        message: 'Invalid username or password'
       }, { status: 401 });
     }
 
@@ -54,15 +54,15 @@ export async function POST(request: NextRequest) {
       } else {
         await logActivity({
           userId: user.id,
-          userEmail: email,
-          userName: user.name,
+          userEmail: user.email || '',
+          userName: user.name || username,
           action: 'LOGIN_BLOCKED',
           module: 'AUTH',
           details: { reason: 'Account is locked' },
         });
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'ACCOUNT_LOCKED',
-          message: 'Your account is locked. Please contact administrator.' 
+          message: 'Your account is locked. Please contact administrator.'
         }, { status: 403 });
       }
     }
@@ -86,17 +86,17 @@ export async function POST(request: NextRequest) {
 
         await logActivity({
           userId: user.id,
-          userEmail: email,
-          userName: user.name,
+          userEmail: user.email || '',
+          userName: user.name || username,
           action: 'ACCOUNT_LOCKED',
           module: 'AUTH',
-          details: { 
+          details: {
             reason: 'Too many failed login attempts',
             failedAttempts: newFailedAttempts,
           },
         });
 
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'ACCOUNT_LOCKED_NOW',
           message: 'Your account has been locked due to too many failed login attempts.',
           failedAttempts: newFailedAttempts,
@@ -112,18 +112,18 @@ export async function POST(request: NextRequest) {
 
         await logActivity({
           userId: user.id,
-          userEmail: email,
-          userName: user.name,
+          userEmail: user.email || '',
+          userName: user.name || username,
           action: 'LOGIN_FAILED',
           module: 'AUTH',
-          details: { 
+          details: {
             reason: 'Invalid password',
             failedAttempts: newFailedAttempts,
             remainingAttempts: maxLoginAttempts - newFailedAttempts,
           },
         });
 
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'INVALID_PASSWORD',
           message: 'Invalid password',
           failedAttempts: newFailedAttempts,
@@ -134,16 +134,16 @@ export async function POST(request: NextRequest) {
 
     // Password correct - credentials are valid
     // Reset failed attempts will be done by NextAuth authorize
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      message: 'Credentials valid' 
+      message: 'Credentials valid'
     });
 
   } catch (error) {
     console.error('Check credentials error:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'SERVER_ERROR',
-      message: 'Internal server error' 
+      message: 'Internal server error'
     }, { status: 500 });
   }
 }

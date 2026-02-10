@@ -9,7 +9,7 @@ import Link from 'next/link';
 export default function SignInPage() {
   const t = useTranslations();
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [errorType, setErrorType] = useState<'warning' | 'error' | 'locked'>('error');
@@ -28,7 +28,7 @@ export default function SignInPage() {
       const checkResponse = await fetch('/api/auth/check-credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const checkResult = await checkResponse.json();
@@ -53,7 +53,7 @@ export default function SignInPage() {
             break;
           case 'INVALID_CREDENTIALS':
             setErrorType('error');
-            setError(t('auth.invalidCredentials') || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+            setError(t('auth.invalidCredentials') || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
             break;
           default:
             setErrorType('error');
@@ -65,7 +65,7 @@ export default function SignInPage() {
 
       // Step 2: If credentials valid, proceed with NextAuth signIn
       const result = await signIn('credentials', {
-        email,
+        username,
         password,
         redirect: false,
       });
@@ -105,7 +105,7 @@ export default function SignInPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"></div>
       </div>
-      
+
       {/* Glassmorphism card */}
       <div className="relative backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
@@ -148,14 +148,14 @@ export default function SignInPage() {
         <form onSubmit={handleSubmit} className="space-y-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-200 mb-2">
-              {t('auth.email')}
+              {t('auth.username') || 'Username'}
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 focus:outline-none transition-all"
-              placeholder="your@email.com"
+              placeholder="username"
               required
               disabled={errorType === 'locked'}
             />

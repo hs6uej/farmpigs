@@ -5,23 +5,23 @@ import bcrypt from 'bcryptjs';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name } = body;
+    const { email, username, password, name } = body;
 
-    if (!email || !password) {
+    if (!username || !password) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Username and password are required' },
         { status: 400 }
       );
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { username }
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'Username is already taken' },
         { status: 400 }
       );
     }
@@ -33,6 +33,7 @@ export async function POST(request: Request) {
     const user = await prisma.user.create({
       data: {
         email,
+        username,
         name,
         password: hashedPassword,
         role: 'USER' // Default role

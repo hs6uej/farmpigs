@@ -14,7 +14,8 @@ datasource db {
 model User {
   id                  String    @id @default(cuid())
   name                String?
-  email               String    @unique
+  username            String?   @unique // Login with username
+  email               String?   @unique // Optional if using username only, but good to keep for recovery
   emailVerified       DateTime?
   image               String?
   password            String?   // For email/password auth
@@ -183,6 +184,8 @@ model Piglet {
   currentPenId    String?          // คอกปัจจุบัน
   status          PigletStatus     @default(NURSING)
   gender          Gender?
+  deathDate       DateTime?        // วันที่ตาย
+  deathCause      String?          // สาเหตุการตาย
   notes           String?          @db.Text
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt

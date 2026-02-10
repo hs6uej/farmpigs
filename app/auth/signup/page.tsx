@@ -11,6 +11,7 @@ export default function SignUpPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
   });
@@ -36,7 +37,7 @@ export default function SignUpPage() {
 
       // Auto sign in after registration
       await signIn('credentials', {
-        email: formData.email,
+        username: formData.username,
         password: formData.password,
         redirect: false,
       });
@@ -56,7 +57,7 @@ export default function SignUpPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"></div>
       </div>
-      
+
       {/* Glassmorphism card */}
       <div className="relative backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
@@ -89,7 +90,21 @@ export default function SignUpPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-200 mb-2">
-              {t('auth.email')}
+              {t('auth.username') || 'Username'}
+            </label>
+            <input
+              type="text"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              className="w-full px-4 py-3 backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 focus:outline-none transition-all"
+              placeholder="username"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-200 mb-2">
+              {t('auth.email')} ({t('common.optional') || 'Optional'})
             </label>
             <input
               type="email"
@@ -97,7 +112,6 @@ export default function SignUpPage() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-4 py-3 backdrop-blur-sm bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 focus:outline-none transition-all"
               placeholder="your@email.com"
-              required
             />
           </div>
 
@@ -130,7 +144,7 @@ export default function SignUpPage() {
             <div className="w-full border-t border-white/20"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-600 text-gray-100">
+            <span className="px-4 bg-gray-600 text-gray-100">
               {t('auth.orContinueWith')}
             </span>
           </div>

@@ -13,6 +13,13 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   LineChart,
   Line,
   XAxis,
@@ -68,9 +75,32 @@ export default function DashboardPage() {
   const t = useTranslations();
   const locale = useLocale();
 
+  const [timeRange, setTimeRange] = useState('30d');
+
+  const getDateRange = (range: string) => {
+    const end = new Date();
+    const start = new Date();
+    switch (range) {
+      case '7d': start.setDate(end.getDate() - 7); break;
+      case '30d': start.setDate(end.getDate() - 30); break;
+      case '3m': start.setMonth(end.getMonth() - 3); break;
+      case '6m': start.setMonth(end.getMonth() - 6); break;
+      case '1y': start.setFullYear(end.getFullYear() - 1); break;
+      default: return null;
+    }
+    return { start, end };
+  };
+
   useEffect(() => {
+    setLoading(true);
+    const range = getDateRange(timeRange);
+    let url = '/api/analytics';
+    if (range) {
+      url += `?startDate=${range.start.toISOString()}&endDate=${range.end.toISOString()}`;
+    }
+
     Promise.all([
-      fetch('/api/analytics').then(res => res.json()),
+      fetch(url).then(res => res.json()),
       fetch('/api/analytics/yearly').then(res => res.json())
     ])
       .then(([analyticsData, yearlyAnalytics]) => {
@@ -82,7 +112,7 @@ export default function DashboardPage() {
         console.error('Error fetching analytics:', error);
         setLoading(false);
       });
-  }, []);
+  }, [timeRange]);
 
   if (loading) {
     return (
@@ -102,7 +132,24 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 min-h-screen bg-white dark:bg-transparent">
-      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 md:mb-8">{t('dashboard.overview')}</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6 md:mb-8">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{t('dashboard.overview')}</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-300">Time Range:</span>
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 Days</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="3m">Last 3 Months</SelectItem>
+              <SelectItem value="6m">Last 6 Months</SelectItem>
+              <SelectItem value="1y">Last Year</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 md:mb-8">
