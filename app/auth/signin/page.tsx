@@ -148,7 +148,7 @@ export default function SignInPage() {
         <form onSubmit={handleSubmit} className="space-y-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-200 mb-2">
-              {t('auth.username') || 'Username'}
+              {t('auth.username') || 'Username or Email'}
             </label>
             <input
               type="text"
