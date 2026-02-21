@@ -10,11 +10,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgres://postgres:password@postgres:5432/farmpigs?schema=public
+      DATABASE_URL: postgres://postgres:password@farmpigs-postgres:5432/farmpigs?schema=public
       NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: supersecret # Change this in production
+      NEXTAUTH_SECRET: supersecret
     depends_on:
       - postgres
+    networks:
+      - farmpigs-network
 
   postgres:
     image: postgres:15-alpine
@@ -28,6 +30,26 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - farmpigs-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: farmpigs-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - farmpigs-network
+
+networks:
+  farmpigs-network:
+    driver: bridge
 
 volumes:
   postgres_data:
