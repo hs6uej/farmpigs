@@ -61,7 +61,7 @@ interface Sow {
   farrowings: any[];
 }
 
-const STATUS_OPTIONS = ['ACTIVE', 'PREGNANT', 'LACTATING', 'WEANED', 'CULLED', 'SOLD'];
+const STATUS_OPTIONS = ['ACTIVE', 'PREGNANT', 'LACTATING', 'WEANED', 'CULLED', 'SOLD', 'DEAD'];
 
 type SortField = 'tagNumber' | 'breed' | 'age' | 'status' | 'breedings' | 'farrowings';
 type SortDirection = 'asc' | 'desc';
@@ -341,6 +341,7 @@ export default function SowsPage() {
       WEANED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200',
       CULLED: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200',
       SOLD: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+      DEAD: 'bg-gray-900 text-white dark:bg-black dark:text-gray-300',
     };
 
     return (

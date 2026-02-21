@@ -3,11 +3,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { 
-  Search, 
-  Plus, 
-  Edit2, 
-  Trash2, 
+import {
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
   X,
   Download,
   ChevronLeft,
@@ -60,7 +60,7 @@ interface Boar {
   breedings?: any[];
 }
 
-const STATUS_OPTIONS = ['ACTIVE', 'RESTING', 'CULLED', 'SOLD'];
+const STATUS_OPTIONS = ['ACTIVE', 'RETIRED', 'CULLED', 'SOLD', 'DEAD'];
 
 type SortField = 'tagNumber' | 'breed' | 'age' | 'status' | 'breedings';
 type SortDirection = 'asc' | 'desc';
@@ -68,7 +68,7 @@ type SortDirection = 'asc' | 'desc';
 export default function BoarsPage() {
   const t = useTranslations();
   const locale = useLocale();
-  
+
   const [boars, setBoars] = useState<Boar[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -126,13 +126,13 @@ export default function BoarsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Clear previous errors
     setFieldErrors({});
-    
+
     // Validate required fields
     const errors: typeof fieldErrors = {};
-    
+
     if (!formData.tagNumber.trim()) {
       errors.tagNumber = locale === 'th' ? 'กรุณากรอก Tag Number' : 'Tag Number is required';
     }
@@ -142,16 +142,16 @@ export default function BoarsPage() {
     if (!formData.birthDate) {
       errors.birthDate = locale === 'th' ? 'กรุณาเลือกวันเกิด' : 'Birth date is required';
     }
-    
+
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
     }
-    
+
     try {
       const url = editingBoar ? `/api/boars/${editingBoar.id}` : '/api/boars';
       const method = editingBoar ? 'PUT' : 'POST';
-      
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -224,7 +224,7 @@ export default function BoarsPage() {
       [t('sows.status')]: boar.status,
       'Breedings': boar.breedings?.length || 0
     }));
-    
+
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Boars');
@@ -247,8 +247,8 @@ export default function BoarsPage() {
     if (sortField !== field) {
       return <ArrowUpDown size={14} className="ml-1 opacity-50" />;
     }
-    return sortDirection === 'asc' 
-      ? <ArrowUp size={14} className="ml-1 text-purple-500" /> 
+    return sortDirection === 'asc'
+      ? <ArrowUp size={14} className="ml-1 text-purple-500" />
       : <ArrowDown size={14} className="ml-1 text-purple-500" />;
   };
 
@@ -261,7 +261,7 @@ export default function BoarsPage() {
 
   // Filter and sort boars
   const filteredAndSortedBoars = useMemo(() => {
-    let result = boars.filter(boar => 
+    let result = boars.filter(boar =>
       boar.tagNumber.toLowerCase().includes(search.toLowerCase()) ||
       boar.breed.toLowerCase().includes(search.toLowerCase())
     );
@@ -335,18 +335,20 @@ export default function BoarsPage() {
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
       ACTIVE: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200',
-      RESTING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200',
+      RETIRED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200',
       CULLED: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200',
       SOLD: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+      DEAD: 'bg-gray-900 text-white dark:bg-black dark:text-gray-300',
     };
 
     const shortLabels: Record<string, string> = {
       ACTIVE: '✓',
-      RESTING: '⏸',
+      RETIRED: '⏸',
       CULLED: '✗',
       SOLD: '💰',
+      DEAD: '💀',
     };
-    
+
     return (
       <span className={`px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-sm font-medium whitespace-nowrap ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
         <span className="sm:hidden">{shortLabels[status] || status}</span>
@@ -471,106 +473,106 @@ export default function BoarsPage() {
       <Card className="bg-white dark:bg-[#1f1d2e] overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-[#2a2640] hover:bg-gray-50 dark:hover:bg-[#2a2640]">
-                <TableHead 
-                  className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase first:rounded-tl-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap"
-                  onClick={() => handleSort('tagNumber')}
-                >
-                  <div className="flex items-center">
-                    <span className="sm:hidden">{locale === 'th' ? 'แท็ก' : 'Tag'}</span>
-                    <span className="hidden sm:inline">{t('sows.tagNumber')}</span>
-                    {getSortIcon('tagNumber')}
-                  </div>
-                </TableHead>
-                <TableHead 
-                  className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap hidden sm:table-cell"
-                  onClick={() => handleSort('breed')}
-                >
-                  <div className="flex items-center">
-                    {t('sows.breed')}
-                    {getSortIcon('breed')}
-                  </div>
-                </TableHead>
-                <TableHead 
-                  className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap"
-                  onClick={() => handleSort('age')}
-                >
-                  <div className="flex items-center">
-                    <span className="sm:hidden">{locale === 'th' ? 'อายุ' : 'Age'}</span>
-                    <span className="hidden sm:inline">{locale === 'th' ? 'อายุ (เดือน)' : 'Age (months)'}</span>
-                    {getSortIcon('age')}
-                  </div>
-                </TableHead>
-                <TableHead 
-                  className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap"
-                  onClick={() => handleSort('status')}
-                >
-                  <div className="flex items-center">
-                    <span className="sm:hidden">{locale === 'th' ? 'สถานะ' : 'Status'}</span>
-                    <span className="hidden sm:inline">{t('sows.status')}</span>
-                    {getSortIcon('status')}
-                  </div>
-                </TableHead>
-                <TableHead 
-                  className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap hidden lg:table-cell"
-                  onClick={() => handleSort('breedings')}
-                >
-                  <div className="flex items-center">
-                    {locale === 'th' ? 'การผสม' : 'Breedings'}
-                    {getSortIcon('breedings')}
-                  </div>
-                </TableHead>
-                <TableHead className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase text-right last:rounded-tr-lg whitespace-nowrap">
-                  <span className="hidden sm:inline">{t('common.edit')}</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedBoars.map((boar) => (
-                <TableRow key={boar.id} className="border-b border-gray-100 dark:border-[#8B8D98]/20 hover:bg-gray-50 dark:hover:bg-[#7800A3]/10">
-                  <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4">
-                    <span className="font-semibold text-[11px] sm:text-sm text-gray-900 dark:text-white">{boar.tagNumber}</span>
-                  </TableCell>
-                  <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4 text-[11px] sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">
-                    {boar.breed}
-                  </TableCell>
-                  <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4 text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">
-                    {getAgeInMonths(boar.birthDate)}
-                  </TableCell>
-                  <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4">
-                    {getStatusBadge(boar.status)}
-                  </TableCell>
-                  <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4 text-[11px] sm:text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell">
-                    {boar.breedings?.length || 0}
-                  </TableCell>
-                  <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4 text-right">
-                    <div className="flex items-center justify-end gap-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openModal(boar)}
-                        className="cursor-pointer text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-7 w-7 sm:h-9 sm:w-9"
-                      >
-                        <Edit2 size={14} className="sm:hidden" />
-                        <Edit2 size={18} className="hidden sm:block" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openDeleteDialog(boar)}
-                        className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-7 w-7 sm:h-9 sm:w-9"
-                      >
-                        <Trash2 size={14} className="sm:hidden" />
-                        <Trash2 size={18} className="hidden sm:block" />
-                      </Button>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-[#2a2640] hover:bg-gray-50 dark:hover:bg-[#2a2640]">
+                  <TableHead
+                    className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase first:rounded-tl-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap"
+                    onClick={() => handleSort('tagNumber')}
+                  >
+                    <div className="flex items-center">
+                      <span className="sm:hidden">{locale === 'th' ? 'แท็ก' : 'Tag'}</span>
+                      <span className="hidden sm:inline">{t('sows.tagNumber')}</span>
+                      {getSortIcon('tagNumber')}
                     </div>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead
+                    className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap hidden sm:table-cell"
+                    onClick={() => handleSort('breed')}
+                  >
+                    <div className="flex items-center">
+                      {t('sows.breed')}
+                      {getSortIcon('breed')}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap"
+                    onClick={() => handleSort('age')}
+                  >
+                    <div className="flex items-center">
+                      <span className="sm:hidden">{locale === 'th' ? 'อายุ' : 'Age'}</span>
+                      <span className="hidden sm:inline">{locale === 'th' ? 'อายุ (เดือน)' : 'Age (months)'}</span>
+                      {getSortIcon('age')}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center">
+                      <span className="sm:hidden">{locale === 'th' ? 'สถานะ' : 'Status'}</span>
+                      <span className="hidden sm:inline">{t('sows.status')}</span>
+                      {getSortIcon('status')}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3650] whitespace-nowrap hidden lg:table-cell"
+                    onClick={() => handleSort('breedings')}
+                  >
+                    <div className="flex items-center">
+                      {locale === 'th' ? 'การผสม' : 'Breedings'}
+                      {getSortIcon('breedings')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="px-1.5 sm:px-4 text-[10px] sm:text-sm font-medium text-gray-600 dark:text-gray-300 uppercase text-right last:rounded-tr-lg whitespace-nowrap">
+                    <span className="hidden sm:inline">{t('common.edit')}</span>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {paginatedBoars.map((boar) => (
+                  <TableRow key={boar.id} className="border-b border-gray-100 dark:border-[#8B8D98]/20 hover:bg-gray-50 dark:hover:bg-[#7800A3]/10">
+                    <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4">
+                      <span className="font-semibold text-[11px] sm:text-sm text-gray-900 dark:text-white">{boar.tagNumber}</span>
+                    </TableCell>
+                    <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4 text-[11px] sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+                      {boar.breed}
+                    </TableCell>
+                    <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4 text-[11px] sm:text-sm text-gray-500 dark:text-gray-400">
+                      {getAgeInMonths(boar.birthDate)}
+                    </TableCell>
+                    <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4">
+                      {getStatusBadge(boar.status)}
+                    </TableCell>
+                    <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4 text-[11px] sm:text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell">
+                      {boar.breedings?.length || 0}
+                    </TableCell>
+                    <TableCell className="px-1.5 sm:px-4 py-2 sm:py-4 text-right">
+                      <div className="flex items-center justify-end gap-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openModal(boar)}
+                          className="cursor-pointer text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-7 w-7 sm:h-9 sm:w-9"
+                        >
+                          <Edit2 size={14} className="sm:hidden" />
+                          <Edit2 size={18} className="hidden sm:block" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteDialog(boar)}
+                          className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-7 w-7 sm:h-9 sm:w-9"
+                        >
+                          <Trash2 size={14} className="sm:hidden" />
+                          <Trash2 size={18} className="hidden sm:block" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
 
           {filteredAndSortedBoars.length === 0 && (
@@ -591,7 +593,7 @@ export default function BoarsPage() {
                 <span className="font-medium text-gray-900 dark:text-white">{filteredAndSortedBoars.length}</span>
                 <span className="hidden sm:inline">{locale === 'th' ? 'รายการ' : 'records'}</span>
               </div>
-              
+
               <div className="flex items-center gap-2 sm:gap-4">
                 <div className="flex items-center gap-1 sm:gap-2">
                   <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 hidden sm:inline">{locale === 'th' ? 'แถวต่อหน้า' : 'Rows per page'}</span>
@@ -613,7 +615,7 @@ export default function BoarsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="flex items-center gap-1">
                   <Button
                     variant="outline"
@@ -625,14 +627,14 @@ export default function BoarsPage() {
                     <ChevronLeft size={14} className="sm:hidden" />
                     <ChevronLeft size={16} className="hidden sm:block" />
                   </Button>
-                  
+
                   <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2">
                     <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{locale === 'th' ? 'หน้า' : 'Page'}</span>
                     <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{currentPage}</span>
                     <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">/</span>
                     <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{totalPages || 1}</span>
                   </div>
-                  
+
                   <Button
                     variant="outline"
                     size="icon"
@@ -658,10 +660,10 @@ export default function BoarsPage() {
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 {editingBoar ? (locale === 'th' ? 'แก้ไขพ่อพันธุ์' : 'Edit Boar') : (locale === 'th' ? 'เพิ่มพ่อพันธุ์' : 'Add Boar')}
               </h2>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 sm:h-9 sm:w-9 cursor-pointer rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-[#7800A3]/20 transition-colors" 
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 sm:h-9 sm:w-9 cursor-pointer rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-[#7800A3]/20 transition-colors"
                 onClick={closeModal}
               >
                 <X size={18} className="sm:hidden" />
@@ -679,11 +681,10 @@ export default function BoarsPage() {
                     setFormData({ ...formData, tagNumber: e.target.value });
                     if (fieldErrors.tagNumber) setFieldErrors({ ...fieldErrors, tagNumber: undefined });
                   }}
-                  className={`w-full h-9 sm:h-10 px-3 py-2 text-sm border rounded-lg bg-gray-50 dark:bg-[#2a2640] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-0 focus:ring-[#7800A3] outline-none ${
-                    fieldErrors.tagNumber 
-                      ? 'border-red-500 dark:border-red-500' 
+                  className={`w-full h-9 sm:h-10 px-3 py-2 text-sm border rounded-lg bg-gray-50 dark:bg-[#2a2640] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-0 focus:ring-[#7800A3] outline-none ${fieldErrors.tagNumber
+                      ? 'border-red-500 dark:border-red-500'
                       : 'border-gray-200 dark:border-[#8B8D98]/50 focus:border-[#7800A3]'
-                  }`}
+                    }`}
                   placeholder="e.g., B001"
                 />
                 {fieldErrors.tagNumber && (
@@ -703,11 +704,10 @@ export default function BoarsPage() {
                     setFormData({ ...formData, breed: e.target.value });
                     if (fieldErrors.breed) setFieldErrors({ ...fieldErrors, breed: undefined });
                   }}
-                  className={`w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-[#2a2640] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-0 focus:ring-[#7800A3] outline-none ${
-                    fieldErrors.breed 
-                      ? 'border-red-500 dark:border-red-500' 
+                  className={`w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-[#2a2640] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-0 focus:ring-[#7800A3] outline-none ${fieldErrors.breed
+                      ? 'border-red-500 dark:border-red-500'
                       : 'border-gray-200 dark:border-[#8B8D98]/50 focus:border-[#7800A3]'
-                  }`}
+                    }`}
                   placeholder="e.g., Duroc"
                 />
                 {fieldErrors.breed && (
@@ -721,11 +721,10 @@ export default function BoarsPage() {
               <div>
                 <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">{t('sows.birthDate')} *</label>
                 <DatePicker
-                  className={`cursor-pointer w-full h-10 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-[#2a2640] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-[#7800A3] focus:ring-1 focus:ring-[#7800A3] ${
-                    fieldErrors.birthDate 
-                      ? 'border-red-500 dark:border-red-500' 
+                  className={`cursor-pointer w-full h-10 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-[#2a2640] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-[#7800A3] focus:ring-1 focus:ring-[#7800A3] ${fieldErrors.birthDate
+                      ? 'border-red-500 dark:border-red-500'
                       : 'border-gray-200 dark:border-[#8B8D98]/60'
-                  }`}
+                    }`}
                   value={formData.birthDate}
                   onChange={(date) => {
                     setFormData({ ...formData, birthDate: date ? format(date, 'yyyy-MM-dd') : '' });
@@ -806,7 +805,7 @@ export default function BoarsPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent 
+        <AlertDialogContent
           className="bg-white dark:bg-[#1f1d2e] border border-gray-200 dark:border-[#8B8D98]/20 w-[calc(100%-2rem)] sm:w-full max-w-md mx-auto"
           onEscapeKeyDown={() => setDeleteDialogOpen(false)}
         >
@@ -820,7 +819,7 @@ export default function BoarsPage() {
             <X size={16} className="sm:hidden" />
             <X size={18} className="hidden sm:block" />
           </Button>
-          
+
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base sm:text-lg text-gray-900 dark:text-white pr-8">
               {t('common.delete')} {locale === 'th' ? 'พ่อพันธุ์?' : 'Boar?'}
@@ -845,7 +844,7 @@ export default function BoarsPage() {
 
       {/* Error Dialog */}
       <AlertDialog open={errorDialogOpen} onOpenChange={setErrorDialogOpen}>
-        <AlertDialogContent 
+        <AlertDialogContent
           className="bg-white dark:bg-[#1f1d2e] border border-gray-200 dark:border-[#8B8D98]/20 w-[calc(100%-2rem)] sm:w-full max-w-md mx-auto"
           onEscapeKeyDown={() => setErrorDialogOpen(false)}
         >
@@ -858,7 +857,7 @@ export default function BoarsPage() {
             <X size={16} className="sm:hidden" />
             <X size={18} className="hidden sm:block" />
           </Button>
-          
+
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
               <AlertCircle size={20} />
