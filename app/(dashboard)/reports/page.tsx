@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Download, BarChart3, Baby, Heart, Skull, TrendingUp } from 'lucide-react';
+import { Download, BarChart3, Baby, Heart, Skull, TrendingUp, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import {
   BarChart, Bar, LineChart, Line,
@@ -39,6 +39,7 @@ export default function ReportsPage() {
   const [deathCauses, setDeathCauses] = useState<any>(null);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedSowId, setExpandedSowId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -444,6 +445,7 @@ export default function ReportsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-8"></TableHead>
                       <TableHead>รหัสแม่</TableHead>
                       <TableHead>สายพันธุ์</TableHead>
                       <TableHead className="text-center">ครอก</TableHead>
@@ -454,32 +456,82 @@ export default function ReportsPage() {
                       <TableHead className="text-center">รอดชีวิต</TableHead>
                       <TableHead className="text-center">อัตราการรอด</TableHead>
                       <TableHead className="text-center">อัตราการตาย</TableHead>
+                      <TableHead className="text-center">รายละเอียด</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sowPerformance.length === 0 ? (
-                      <TableRow><TableCell colSpan={10} className="text-center py-8 text-gray-500">ไม่มีข้อมูล</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={12} className="text-center py-8 text-gray-500">ไม่มีข้อมูล</TableCell></TableRow>
                     ) : sowPerformance.map((sow: any) => (
-                      <TableRow key={sow.id}>
-                        <TableCell className="font-semibold text-purple-600">{sow.tagNumber}</TableCell>
-                        <TableCell>{sow.breed}</TableCell>
-                        <TableCell className="text-center">{sow.totalLitters}</TableCell>
-                        <TableCell className="text-center">{sow.totalBorn}</TableCell>
-                        <TableCell className="text-center text-green-600">{sow.totalBornAlive}</TableCell>
-                        <TableCell className="text-center text-orange-500">{sow.totalStillborn}</TableCell>
-                        <TableCell className="text-center text-red-500">{sow.totalDead}</TableCell>
-                        <TableCell className="text-center font-bold text-green-600">{sow.survivors}</TableCell>
-                        <TableCell className="text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sow.survivalRate >= 80 ? 'bg-green-100 text-green-700' : sow.survivalRate >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                            {sow.survivalRate}%
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sow.mortalityRate <= 10 ? 'bg-green-100 text-green-700' : sow.mortalityRate <= 25 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                            {sow.mortalityRate}%
-                          </span>
-                        </TableCell>
-                      </TableRow>
+                      <>
+                        <TableRow
+                          key={sow.id}
+                          className="cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-colors"
+                          onClick={() => setExpandedSowId(expandedSowId === sow.id ? null : sow.id)}
+                        >
+                          <TableCell className="text-gray-400">
+                            {expandedSowId === sow.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </TableCell>
+                          <TableCell className="font-semibold text-purple-600">{sow.tagNumber}</TableCell>
+                          <TableCell>{sow.breed}</TableCell>
+                          <TableCell className="text-center">{sow.totalLitters}</TableCell>
+                          <TableCell className="text-center">{sow.totalBorn}</TableCell>
+                          <TableCell className="text-center text-green-600">{sow.totalBornAlive}</TableCell>
+                          <TableCell className="text-center text-orange-500">{sow.totalStillborn}</TableCell>
+                          <TableCell className="text-center text-red-500">{sow.totalDead}</TableCell>
+                          <TableCell className="text-center font-bold text-green-600">{sow.survivors}</TableCell>
+                          <TableCell className="text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sow.survivalRate >= 80 ? 'bg-green-100 text-green-700' : sow.survivalRate >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                              {sow.survivalRate}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sow.mortalityRate <= 10 ? 'bg-green-100 text-green-700' : sow.mortalityRate <= 25 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                              {sow.mortalityRate}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <a
+                              href={`/sows/${sow.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 underline"
+                            >
+                              <ExternalLink size={11} /> ดูโปรไฟล์
+                            </a>
+                          </TableCell>
+                        </TableRow>
+                        {expandedSowId === sow.id && (
+                          <TableRow key={`${sow.id}-detail`}>
+                            <TableCell colSpan={12} className="p-0 bg-gray-50 dark:bg-gray-900/40">
+                              <div className="px-6 py-3">
+                                <p className="text-xs font-semibold text-gray-500 mb-2">🐷 รายละเอียดลูกที่ตาย ({sow.totalDead} ตัว)</p>
+                                {sow.deathDetails && sow.deathDetails.length > 0 ? (
+                                  <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                      <tr className="text-left text-gray-400">
+                                        <th className="pb-1 pr-4">วันคลอด (Batch)</th>
+                                        <th className="pb-1 pr-4">วันที่ตาย</th>
+                                        <th className="pb-1">สาเหตุการตาย</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {sow.deathDetails.map((d: any, i: number) => (
+                                        <tr key={i} className="border-t border-gray-200 dark:border-gray-700">
+                                          <td className="py-1 pr-4 text-gray-600 dark:text-gray-300">{formatDate(d.batchDate)}</td>
+                                          <td className="py-1 pr-4 text-red-500">{d.deathDate ? formatDate(d.deathDate) : '—'}</td>
+                                          <td className="py-1 text-gray-700 dark:text-gray-200">{d.cause || <span className="text-gray-400 italic">ไม่ระบุ</span>}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <p className="text-xs text-gray-400 italic">ไม่มีลูกที่ตายหลังคลอด</p>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
                     ))}
                   </TableBody>
                 </Table>
