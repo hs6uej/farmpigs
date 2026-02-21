@@ -1,20 +1,31 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
         const sows = await prisma.sow.findMany({
-            where: {
-                status: { not: 'DEAD' } // Or include dead sows if needed
-            },
             include: {
                 farrowings: {
                     include: {
                         piglets: {
                             select: {
-                                status: true
+                                id: true,
+                                status: true,
+                                deathDate: true,
+                                deathCause: true,
+                                birthWeight: true,
+                                gender: true,
                             }
                         }
+                    }
+                },
+                healthRecords: {
+                    where: { recordType: 'MORTALITY' },
+                    select: {
+                        recordDate: true,
+                        deathCause: true,
+                        disease: true,
+                        notes: true,
                     }
                 }
             },
@@ -25,23 +36,44 @@ export async function GET(request: Request) {
 
             let totalBorn = 0;
             let totalBornAlive = 0;
-            let totalDeadPostFarrowing = 0;
+            let totalStillborn = 0;
             let totalBirthWeight = 0;
             let weightCount = 0;
+            const deathDetails: {
+                batchDate: string;
+                deathDate: string | null;
+                cause: string | null;
+            }[] = [];
 
             sow.farrowings.forEach((f: any) => {
                 totalBorn += f.totalBorn;
                 totalBornAlive += f.bornAlive;
-                totalDeadPostFarrowing += f.piglets.filter((p: any) => p.status === 'DEAD').length;
+                totalStillborn += f.stillborn;
                 if (f.averageBirthWeight) {
                     totalBirthWeight += f.averageBirthWeight;
                     weightCount++;
                 }
+
+                // Collect death records from piglets in this batch
+                f.piglets
+                    .filter((p: any) => p.status === 'DEAD')
+                    .forEach((p: any) => {
+                        deathDetails.push({
+                            batchDate: f.farrowingDate,
+                            deathDate: p.deathDate,
+                            cause: p.deathCause || null,
+                        });
+                    });
             });
 
+            const totalDeadPostFarrowing = deathDetails.length;
             const avgBornPerLitter = totalLitters > 0 ? totalBorn / totalLitters : 0;
+            const survivors = totalBornAlive - totalDeadPostFarrowing;
             const survivalRate = totalBornAlive > 0
-                ? ((totalBornAlive - totalDeadPostFarrowing) / totalBornAlive) * 100
+                ? (survivors / totalBornAlive) * 100
+                : 0;
+            const mortalityRate = totalBornAlive > 0
+                ? (totalDeadPostFarrowing / totalBornAlive) * 100
                 : 0;
             const avgBirthWeight = weightCount > 0 ? totalBirthWeight / weightCount : 0;
 
@@ -52,10 +84,14 @@ export async function GET(request: Request) {
                 totalLitters,
                 totalBorn,
                 totalBornAlive,
+                totalStillborn,
                 totalDead: totalDeadPostFarrowing,
+                survivors,
                 survivalRate: parseFloat(survivalRate.toFixed(2)),
+                mortalityRate: parseFloat(mortalityRate.toFixed(2)),
                 avgBornPerLitter: parseFloat(avgBornPerLitter.toFixed(2)),
                 avgBirthWeight: parseFloat(avgBirthWeight.toFixed(2)),
+                deathDetails, // Array of {batchDate, deathDate, cause}
             };
         });
 

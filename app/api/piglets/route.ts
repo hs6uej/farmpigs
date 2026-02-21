@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const farrowingId = searchParams.get('farrowingId');
     const penId = searchParams.get('penId');
-    
+
     const piglets = await prisma.piglet.findMany({
       where: {
         ...(status && { status: status as any }),
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
     });
-    
+
     return NextResponse.json(piglets);
   } catch (error) {
     console.error('Error fetching piglets:', error);
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const body = await request.json();
-    
+
     // If id exists, update the piglet
     if (body.id) {
       // Validate tagNumber for update
@@ -57,7 +57,12 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
+      const previousPiglet = await prisma.piglet.findUnique({
+        where: { id: body.id },
+        select: { status: true, tagNumber: true, farrowingId: true }
+      });
+
       const piglet = await prisma.piglet.update({
         where: { id: body.id },
         data: {
@@ -65,10 +70,31 @@ export async function POST(request: NextRequest) {
           currentPenId: body.currentPenId || null,
           status: body.status,
           gender: body.gender,
+          deathDate: body.status === 'DEAD' ? (body.deathDate ? new Date(body.deathDate) : new Date()) : undefined,
+          deathCause: body.status === 'DEAD' ? (body.deathCause || null) : undefined,
           notes: body.notes,
         },
+        include: {
+          farrowing: { include: { sow: { select: { tagNumber: true } } } }
+        }
       });
-      
+
+      // Fire death notification when status changes to DEAD
+      if (body.status === 'DEAD' && previousPiglet?.status !== 'DEAD') {
+        const sowTag = (piglet as any).farrowing?.sow?.tagNumber || 'ไม่ระบุ';
+        const pigletTag = piglet.tagNumber || piglet.id;
+        await prisma.notification.create({
+          data: {
+            userId: null, // broadcast to all
+            title: '🚨 แจ้งเตือน: ลูกหมูตาย',
+            message: `ลูกหมู ${pigletTag} (แม่: ${sowTag}) เสียชีวิต${body.deathCause ? ` สาเหตุ: ${body.deathCause}` : ''}`,
+            type: 'WARNING',
+            category: 'mortality',
+            link: '/piglets',
+          }
+        });
+      }
+
       // Log update activity
       if (session?.user) {
         await logActivity({
@@ -84,10 +110,11 @@ export async function POST(request: NextRequest) {
           userAgent: request.headers.get('user-agent') || undefined,
         });
       }
-      
+
       return NextResponse.json(piglet);
+
     }
-    
+
     // Validate required fields for creating new piglet
     if (!body.tagNumber?.trim()) {
       return NextResponse.json(
@@ -95,14 +122,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     if (!body.farrowingId) {
       return NextResponse.json(
         { error: 'กรุณาเลือกการคลอด (Farrowing is required)' },
         { status: 400 }
       );
     }
-    
+
     // Create new piglet
     const piglet = await prisma.piglet.create({
       data: {
@@ -115,7 +142,7 @@ export async function POST(request: NextRequest) {
         notes: body.notes || null,
       },
     });
-    
+
     // Log create activity
     if (session?.user) {
       await logActivity({
@@ -131,7 +158,7 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get('user-agent') || undefined,
       });
     }
-    
+
     return NextResponse.json(piglet);
   } catch (error) {
     console.error('Error saving piglet:', error);

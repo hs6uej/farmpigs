@@ -41,11 +41,11 @@ export async function GET(
         },
       },
     });
-    
+
     if (!sow) {
       return NextResponse.json({ error: 'Sow not found' }, { status: 404 });
     }
-    
+
     return NextResponse.json(sow);
   } catch (error) {
     console.error('Error fetching sow:', error);
@@ -62,7 +62,10 @@ export async function PUT(
     const session = await getServerSession(authOptions);
     const { id } = await params;
     const body = await request.json();
-    
+
+    // Get current status before update
+    const existing = await prisma.sow.findUnique({ where: { id }, select: { status: true, tagNumber: true } });
+
     const sow = await prisma.sow.update({
       where: { id },
       data: {
@@ -74,7 +77,21 @@ export async function PUT(
         notes: body.notes,
       },
     });
-    
+
+    // Trigger death notification when status changes to DEAD
+    if (body.status === 'DEAD' && existing?.status !== 'DEAD') {
+      await prisma.notification.create({
+        data: {
+          userId: null, // broadcast
+          title: '🚨 แม่พันธุ์เสียชีวิต',
+          message: `แม่พันธุ์ ${sow.tagNumber} (สายพันธุ์: ${sow.breed}) เสียชีวิตแล้ว`,
+          type: 'WARNING',
+          category: 'mortality',
+          link: '/sows',
+        },
+      });
+    }
+
     // Log activity
     if (session?.user) {
       await logActivity({
@@ -90,7 +107,7 @@ export async function PUT(
         userAgent: request.headers.get('user-agent') || undefined,
       });
     }
-    
+
     return NextResponse.json(sow);
   } catch (error) {
     console.error('Error updating sow:', error);
@@ -106,14 +123,14 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     const { id } = await params;
-    
+
     // Get sow info before deletion for logging
     const sowToDelete = await prisma.sow.findUnique({ where: { id } });
-    
+
     await prisma.sow.delete({
       where: { id },
     });
-    
+
     // Log activity
     if (session?.user) {
       await logActivity({
@@ -129,7 +146,7 @@ export async function DELETE(
         userAgent: request.headers.get('user-agent') || undefined,
       });
     }
-    
+
     return NextResponse.json({ message: 'Sow deleted successfully' });
   } catch (error) {
     console.error('Error deleting sow:', error);

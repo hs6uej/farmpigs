@@ -135,17 +135,17 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6 md:mb-8">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{t('dashboard.overview')}</h1>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-300">Time Range:</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">{locale === 'th' ? 'ช่วงเวลา:' : 'Time Range:'}</span>
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7d">Last 7 Days</SelectItem>
-              <SelectItem value="30d">Last 30 Days</SelectItem>
-              <SelectItem value="3m">Last 3 Months</SelectItem>
-              <SelectItem value="6m">Last 6 Months</SelectItem>
-              <SelectItem value="1y">Last Year</SelectItem>
+              <SelectItem value="7d">{locale === 'th' ? '7 วัน' : 'Last 7 Days'}</SelectItem>
+              <SelectItem value="30d">{locale === 'th' ? '30 วัน' : 'Last 30 Days'}</SelectItem>
+              <SelectItem value="3m">{locale === 'th' ? '3 เดือน' : 'Last 3 Months'}</SelectItem>
+              <SelectItem value="6m">{locale === 'th' ? '6 เดือน' : 'Last 6 Months'}</SelectItem>
+              <SelectItem value="1y">{locale === 'th' ? '1 ปี' : 'Last Year'}</SelectItem>
             </SelectContent>
           </Select>
         </div>

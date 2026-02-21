@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     const boar = await prisma.boar.findUnique({
       where: { id },
       include: {
@@ -21,11 +21,11 @@ export async function GET(
         },
       },
     });
-    
+
     if (!boar) {
       return NextResponse.json({ error: 'Boar not found' }, { status: 404 });
     }
-    
+
     return NextResponse.json(boar);
   } catch (error) {
     console.error('Error fetching boar:', error);
@@ -41,15 +41,15 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    
+
     const existingBoar = await prisma.boar.findUnique({
       where: { id },
     });
-    
+
     if (!existingBoar) {
       return NextResponse.json({ error: 'Boar not found' }, { status: 404 });
     }
-    
+
     const boar = await prisma.boar.update({
       where: { id },
       data: {
@@ -61,7 +61,21 @@ export async function PUT(
         notes: body.notes,
       },
     });
-    
+
+    // Trigger death notification when status changes to DEAD
+    if (body.status === 'DEAD' && existingBoar.status !== 'DEAD') {
+      await prisma.notification.create({
+        data: {
+          userId: null, // broadcast
+          title: '🚨 พ่อพันธุ์เสียชีวิต',
+          message: `พ่อพันธุ์ ${boar.tagNumber} (สายพันธุ์: ${boar.breed}) เสียชีวิตแล้ว`,
+          type: 'WARNING',
+          category: 'mortality',
+          link: '/boars',
+        },
+      });
+    }
+
     return NextResponse.json(boar);
   } catch (error) {
     console.error('Error updating boar:', error);
@@ -76,16 +90,16 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
     const existingBoar = await prisma.boar.findUnique({
       where: { id },
       include: { breedings: true },
     });
-    
+
     if (!existingBoar) {
       return NextResponse.json({ error: 'Boar not found' }, { status: 404 });
     }
-    
+
     // Check if boar has associated breedings
     if (existingBoar.breedings && existingBoar.breedings.length > 0) {
       return NextResponse.json(
@@ -93,11 +107,11 @@ export async function DELETE(
         { status: 400 }
       );
     }
-    
+
     await prisma.boar.delete({
       where: { id },
     });
-    
+
     return NextResponse.json({ message: 'Boar deleted successfully' });
   } catch (error) {
     console.error('Error deleting boar:', error);

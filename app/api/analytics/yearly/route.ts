@@ -10,7 +10,7 @@ export async function GET() {
     for (let i = 11; i >= 0; i--) {
       const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
-      
+
       // Get breeding data for this month
       const totalBreedings = await prisma.breeding.count({
         where: {
@@ -31,7 +31,7 @@ export async function GET() {
         },
       });
 
-      const breedingSuccessRate = totalBreedings > 0 
+      const breedingSuccessRate = totalBreedings > 0
         ? parseFloat(((successfulBreedings / totalBreedings) * 100).toFixed(1))
         : 0;
 
@@ -48,12 +48,12 @@ export async function GET() {
       const totalFarrowings = farrowings.length;
       const totalBorn = farrowings.reduce((sum, f) => sum + f.totalBorn, 0);
       const totalBornAlive = farrowings.reduce((sum, f) => sum + f.bornAlive, 0);
-      
-      const avgPigletsPerLitter = totalFarrowings > 0 
+
+      const avgPigletsPerLitter = totalFarrowings > 0
         ? parseFloat((totalBornAlive / totalFarrowings).toFixed(1))
         : 0;
-      
-      const survivalRate = totalBorn > 0 
+
+      const survivalRate = totalBorn > 0
         ? parseFloat(((totalBornAlive / totalBorn) * 100).toFixed(1))
         : 0;
 
