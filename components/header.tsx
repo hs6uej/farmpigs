@@ -7,11 +7,8 @@ import { useTheme } from 'next-themes';
 import { signOut, useSession } from 'next-auth/react';
 import {
   User,
-  MessageSquare,
-  BellOff,
   Settings,
   Palette,
-
   HelpCircle,
   ChevronDown,
   ChevronRight,
@@ -122,24 +119,6 @@ export default function Header({ translations, locale = 'th' }: HeaderProps) {
                   <span>{translations.profile?.profile || 'Profile'}</span>
                 </Link>
 
-                <button
-                  onClick={() => setProfileMenuOpen(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#7800A3]/20 transition-colors"
-                >
-                  <MessageSquare size={16} className="text-gray-400" />
-                  <span>{translations.profile?.setStatus || 'Set status'}</span>
-                </button>
-
-                <button
-                  onClick={() => setProfileMenuOpen(false)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#7800A3]/20 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <BellOff size={16} className="text-gray-400" />
-                    <span>{translations.profile?.muteNotifications || 'Mute notifications'}</span>
-                  </div>
-                  <ChevronRight size={14} className="text-gray-400" />
-                </button>
 
                 <div className="border-t border-gray-200 dark:border-[#8B8D98]/20 my-2"></div>
 
